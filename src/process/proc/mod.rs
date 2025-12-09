@@ -523,15 +523,28 @@ impl Proc {
             19 => self.sys_link(),
             20 => self.sys_mkdir(),
             21 => self.sys_close(),
-            22 => (self).sys_trace(),
+            22 => self.sys_trace(),
             _ => {
                 panic!("unknown syscall num: {}", a7);
             }
         };
-        tf.a0 = match sys_result {
-            Ok(ret) => ret,
-            Err(()) => -1isize as usize,
-        };
+        let ret = sys_result.unwrap_or_else(|()| -1isize as usize);
+        tf.a0 = ret;
+
+        // syscall的名称
+        const SYSCALL_NAMES: [&str; 23] = [
+            "unknown", "fork", "exit", "wait", "pipe",
+            "read", "kill", "exec", "fstat", "chdir",
+            "dup", "getpid", "sbrk", "sleep", "uptime",
+            "open", "write", "mknod", "unlink", "link",
+            "mkdir", "close", "trace",
+        ];
+
+        if a7 < SYSCALL_NAMES.len() && (self.trace_mask >> a7)&1 != 0 {
+            let pid = self.excl.lock().pid;
+            println!("{}: syscall {} -> {}", pid, SYSCALL_NAMES[a7], ret);
+        }
+
     }
 
     /// # 功能说明
@@ -681,6 +694,7 @@ impl Proc {
             return Err(())
         }
         cdata.sz = size;
+        child.trace_mask = self.trace_mask; // 把父进程的trace_mask给子进程
 
         // clone trapframe and return 0 on a0
         unsafe {
