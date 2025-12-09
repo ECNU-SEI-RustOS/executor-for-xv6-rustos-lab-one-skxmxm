@@ -5,6 +5,7 @@ use core::{cmp::min, convert::TryFrom};
 use core::ptr;
 
 use crate::consts::{PGSHIFT, PGSIZE, SATP_SV39, SV39FLAGLEN, USERTEXT, TRAMPOLINE, TRAPFRAME};
+use crate::trap::user_trap_ret;
 use super::{Addr, PhysAddr, RawPage, RawSinglePage, VirtAddr, pg_round_up};
 
 bitflags! {
@@ -913,6 +914,38 @@ impl PageTable {
             dst = unsafe { dst.offset(off_from_end as isize) };
             va.add_page();
             debug_assert_eq!(src, va.as_usize());
+        }
+    }
+
+    /// 打印页表
+    pub fn vm_print(&self){
+        println!("page table {:p}", self as *const PageTable);
+        // 从第二级开始打印
+        self.vm_print_rc(2);
+    }
+
+    /// 递归打印页表
+    fn vm_print_rc(&self, level: usize){
+        let mut prefix = "";
+        match level{
+            0 => prefix = ".. .. ..",
+            1 => prefix = ".. ..",
+            2 => prefix = "..",
+            _ => unreachable!(),
+        }
+        for (i, pte) in self.data.iter().enumerate() {
+            if !pte.is_valid() {
+                continue;
+            }
+            println!("{}{}: pte {:#x} pa {:#x}", prefix, i, pte.data, pte.as_phys_addr().as_usize());
+            if level >0 && !pte.is_leaf() {
+                let child_ptr = pte.as_page_table();
+                unsafe {
+                    let child = &child_ptr.read();
+                    child.vm_print_rc(level - 1);
+                }
+            }
+
         }
     }
 }
