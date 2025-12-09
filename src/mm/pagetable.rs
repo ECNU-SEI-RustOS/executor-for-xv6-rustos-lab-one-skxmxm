@@ -941,7 +941,7 @@ impl PageTable {
             if level >0 && !pte.is_leaf() {
                 let child_ptr = pte.as_page_table();
                 unsafe {
-                    let child = &child_ptr.read();
+                    let child = &*child_ptr;
                     child.vm_print_rc(level - 1);
                 }
             }
