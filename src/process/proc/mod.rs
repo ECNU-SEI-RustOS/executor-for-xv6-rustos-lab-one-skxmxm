@@ -542,7 +542,7 @@ impl Proc {
 
         if a7 < SYSCALL_NAMES.len() && (self.trace_mask >> a7)&1 != 0 {
             let pid = self.excl.lock().pid;
-            println!("{}: syscall {} -> {}", pid, SYSCALL_NAMES[a7], ret);
+            println!("{}: syscall {} -> {}", pid, SYSCALL_NAMES[a7], ret as isize);
         }
 
     }
