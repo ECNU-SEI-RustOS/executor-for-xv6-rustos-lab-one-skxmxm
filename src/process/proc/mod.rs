@@ -381,7 +381,7 @@ pub struct Proc {
     pub data: UnsafeCell<ProcData>,
     /// 标识进程是否被杀死的原子布尔变量，用于调度和信号处理。
     pub killed: AtomicBool,
-    // 储存trace指令的mask
+    /// 储存trace指令的mask
     pub trace_mask: usize,
 }
 
@@ -523,6 +523,7 @@ impl Proc {
             19 => self.sys_link(),
             20 => self.sys_mkdir(),
             21 => self.sys_close(),
+            22 => (self).sys_trace(),
             _ => {
                 panic!("unknown syscall num: {}", a7);
             }
