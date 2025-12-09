@@ -381,6 +381,8 @@ pub struct Proc {
     pub data: UnsafeCell<ProcData>,
     /// 标识进程是否被杀死的原子布尔变量，用于调度和信号处理。
     pub killed: AtomicBool,
+    // 储存trace指令的mask
+    pub trace_mask: usize,
 }
 
 impl Proc {
@@ -390,6 +392,7 @@ impl Proc {
             excl: SpinLock::new(ProcExcl::new(), "ProcExcl"),
             data: UnsafeCell::new(ProcData::new()),
             killed: AtomicBool::new(false),
+            trace_mask: 0,
         }
     }
 
